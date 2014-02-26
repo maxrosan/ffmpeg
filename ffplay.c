@@ -1750,6 +1750,8 @@ static int configure_filtergraph(AVFilterGraph *graph, const char *filtergraph,
         inputs->pad_idx     = 0;
         inputs->next        = NULL;
 
+        fprintf(stderr, "\n\nfilter: %s\n\n", filtergraph);
+
         if ((ret = avfilter_graph_parse_ptr(graph, filtergraph, &inputs, &outputs, NULL)) < 0)
             goto fail;
     } else {
@@ -2239,6 +2241,9 @@ static int audio_decode_frame(VideoState *is)
                 if ((ret = av_buffersrc_add_frame(is->in_audio_filter, is->frame)) < 0)
                     return ret;
 #endif
+
+                fprintf(stderr, "CONFIG_AVFILTER = %d [%s]\n", CONFIG_AVFILTER, afilters);
+
             }
 #if CONFIG_AVFILTER
             if ((ret = av_buffersink_get_frame_flags(is->out_audio_filter, is->frame, 0)) < 0) {
@@ -2302,7 +2307,9 @@ static int audio_decode_frame(VideoState *is)
                         break;
                     }
                 }
+                
                 av_fast_malloc(&is->audio_buf1, &is->audio_buf1_size, out_size);
+
                 if (!is->audio_buf1)
                     return AVERROR(ENOMEM);
                 len2 = swr_convert(is->swr_ctx, out, out_count, in, is->frame->nb_samples);

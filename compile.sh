@@ -1,5 +1,7 @@
 #!/bin/sh -xe
 
+JOBS=16
+
 function build_arm
 {
 
@@ -25,12 +27,12 @@ ADDITIONAL_CONFIGURE_FLAG=
     --disable-shared \
     --enable-static \
     --extra-ldflags="-Wl,-rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib -nostdlib -lc -lm -ldl -llog" \
-    --disable-everything \
+   --disable-everything \
     --enable-demuxer=mov \
     --enable-demuxer=h264 \
     --enable-demuxer=asf \
-    --disable-ffplay \
-    --disable-ffmpeg \
+    --enable-ffplay \
+    --enable-ffmpeg \
     --enable-protocol=file \
     --enable-avformat \
     --enable-avcodec \
@@ -53,13 +55,18 @@ ADDITIONAL_CONFIGURE_FLAG=
     --enable-protocol=rtp \
     --enable-demuxer=rtsp \
     --enable-network \
+    --enable-filter=aresample \
+    --enable-filter=asetnsamples \
     --enable-zlib \
-    --disable-doc 
+    --disable-doc  
+
+ARMLIB=$PREFIX/lib
+FILES="$ARMLIB/libavcodec.a $ARMLIB/libavformat.a $ARMLIB/libavutil.a $ARMLIB/libswresample.a $ARMLIB/libswscale.a $ARMLIB/libavfilter.a $ARMLIB/libavdevice.a"
     
-make -j8
+make -j$JOBS
 make install
 $PREBUILT/bin/arm-linux-androideabi-ar d libavcodec/libavcodec.a inverse.o
-$PREBUILT/bin/arm-linux-androideabi-ld -rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib  -soname libffmpeg.so -shared -nostdlib  -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so libavcodec/libavcodec.a libavformat/libavformat.a libavutil/libavutil.a libswscale/libswscale.a -lc -lm -lz -ldl -llog  --warn-once  --dynamic-linker=/system/bin/linker $PREBUILT/lib/gcc/arm-linux-androideabi/4.4.3/libgcc.a
+$PREBUILT/bin/arm-linux-androideabi-ld -rpath-link=$PLATFORM/usr/lib -L$PLATFORM/usr/lib  -soname libffmpeg.so -shared -nostdlib  -z,noexecstack -Bsymbolic --whole-archive --no-undefined -o $PREFIX/libffmpeg.so $FILES -lc -lm -lz -ldl -llog  --warn-once  --dynamic-linker=/system/bin/linker $PREBUILT/lib/gcc/arm-linux-androideabi/4.4.3/libgcc.a
 }
 
 function build_x86
@@ -79,8 +86,8 @@ rm -rf $PREFIX/*
     --enable-demuxer=mov \
     --enable-demuxer=h264 \
     --enable-demuxer=asf \
-    --disable-ffplay \
-    --disable-ffmpeg \
+    --enable-ffplay \
+    --enable-ffmpeg \
     --enable-protocol=file \
     --enable-avformat \
     --enable-avcodec \
@@ -101,12 +108,14 @@ rm -rf $PREFIX/*
     --enable-protocol=http \
     --enable-protocol=mmsh \
     --enable-protocol=rtp \
+    --enable-protocol=rtmp \
     --enable-demuxer=rtsp \
     --enable-network \
+    --enable-filter=aresample \
     --enable-zlib \
     --disable-doc 
     
-make -j8
+make -j$JOBS
 make install
 
 #gcc -Landroid/x86/lib -Iandroid/x86/include x86/test.c -o x86/test -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale
@@ -117,6 +126,10 @@ if [ -e config.mak ]; then
     make distclean
 fi;
 
-#arm v6
-#build_arm
-build_x86
+if [ "x$1" == "xarm" ]; then
+    build_arm;
+fi;
+
+if [ "x$1" == "xx86" ]; then
+    build_x86;
+fi;
