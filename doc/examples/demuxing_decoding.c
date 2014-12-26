@@ -95,6 +95,7 @@ static int decode_packet(int *got_frame, int cached)
             /* write to rawvideo file */
             fwrite(video_dst_data[0], 1, video_dst_bufsize, video_dst_file);
         }
+        
     } else if (pkt.stream_index == audio_stream_idx) {
         /* decode audio frame */
         ret = avcodec_decode_audio4(audio_dec_ctx, frame, got_frame, &pkt);
